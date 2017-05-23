@@ -12,6 +12,7 @@ package com.facebook.react.views.webview;
 import javax.annotation.Nullable;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -139,6 +140,19 @@ public class ReactWebViewManager extends SimpleViewManager<WebView> {
         if (url.startsWith("http://") || url.startsWith("https://") ||
             url.startsWith("file://")) {
           return false;
+        } else if(url.startsWith("intent://")){
+          // support url like "intent://platformapi/startapp"
+          try {
+            Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
+            intent.addCategory(Intent.CATEGORY_BROWSABLE);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            view.getContext().startActivity(intent);
+          } catch (ActivityNotFoundException e) {
+            FLog.w(ReactConstants.TAG, "activity not found to handle uri scheme for: " + url, e);
+          } catch (URISyntaxException e) {
+            FLog.w(ReactConstants.TAG, "url is invalid: " + url, e);
+          }
+          return true;
         } else {
           try {
             Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
